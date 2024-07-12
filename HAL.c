@@ -8,8 +8,8 @@
 static FILE *image_file = NULL;
 
 // Opens the image file
-int hal_init(const char *floppy) {
-    image_file = fopen(floppy, "rb");
+int hal_init(const char *image_path) {
+    image_file = fopen(image_path, "rb");
     return image_file ? 0 : -1;
 }
 
