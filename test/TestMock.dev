@@ -1,6 +1,6 @@
 [Project]
-FileName=MockProject.dev
-Name=MockProject
+FileName=TestMock.dev
+Name=TestMock
 Type=1
 Ver=2
 ObjFiles=
@@ -50,17 +50,7 @@ ProductVersion=
 AutoIncBuildNr=0
 SyncProduct=1
 
-[Unit3]
-FileName=HAL.h
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit2]
+[Unit4]
 FileName=HAL.c
 CompileCpp=0
 Folder=
@@ -71,7 +61,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit1]
-FileName=main.c
+FileName=FATfs.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -80,7 +70,17 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit4]
+[Unit2]
+FileName=HAL.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit3]
 FileName=FATfs.c
 CompileCpp=0
 Folder=
@@ -91,7 +91,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit5]
-FileName=FATfs.h
+FileName=main.c
 CompileCpp=0
 Folder=
 Compile=1
