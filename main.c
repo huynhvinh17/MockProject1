@@ -12,7 +12,6 @@ int main(void)
     }
     else
     {
-
         char path[256] = ".";
         int choice;
         char filepath[256];
@@ -61,6 +60,7 @@ int main(void)
                 break;
             case 4:
                 fatfs_deinit();
+                hal_cleanup();
                 exit(0);
             default:
                 printf("Invalid choice!\n");

@@ -5,9 +5,11 @@
 #include <string.h>
 
 #define SECTOR_SIZE 512
+#define MAX_PATH_LEN 256
 
 static fatfs_bootsector_struct_t s_FAT12Info;
 static uint8_t *s_fat_table = NULL;
+
 
 int fatfs_init(const char *image_path)
 {
@@ -25,7 +27,7 @@ int fatfs_init(const char *image_path)
     }
     else
     {
-        memcpy(&s_FAT12Info, bootSector, sizeof(s_FAT12Info)); /** Copy FAT12 information from boot sector */
+        memcpy(&s_FAT12Info, bootSector, sizeof(s_FAT12Info));          /** Copy FAT12 information from boot sector */
         printf("Bytes per sector: %d\n", s_FAT12Info.bytes_per_sector); /** Print FAT12 information (for debugging) */
         printf("Reserved sectors: %d\n", s_FAT12Info.reserved_sectors);
         printf("FAT count: %d\n", s_FAT12Info.fat_count);
@@ -73,6 +75,20 @@ void fatfs_deinit(void)
     }
 }
 
+void get_full_path(const char *base_path, const char *entry_name, char *full_path)
+{
+    if (strcmp(base_path, ".") == 0)
+    {
+        snprintf(full_path, MAX_PATH_LEN, "/%s", entry_name);
+    }
+    else
+    {
+        snprintf(full_path, MAX_PATH_LEN, "%s/%s", base_path, entry_name);
+    }
+}
+
+char current_directory[MAX_PATH_LEN] = "/"; // Biến toàn cục lưu đường dẫn thư mục hiện tại
+
 void fatfs_list_directory(const char *path)
 {
     uint8_t sector[SECTOR_SIZE];
@@ -81,9 +97,10 @@ void fatfs_list_directory(const char *path)
     uint32_t i = 0;
     uint32_t j = 0;
     int k = 0;
+    int entry_index = 1;
 
     fatfs_entry_t *head = NULL;
-    fatfs_entry_t *current = NULL;
+    fatfs_entry_t *current_entry = NULL;
 
     for (i = 0; i < root_dir_sectors; i++)
     {
@@ -131,38 +148,99 @@ void fatfs_list_directory(const char *path)
                 if (head == NULL)
                 {
                     head = new_entry;
-                    current = head;
+                    current_entry = head;
                 }
                 else
                 {
-                    current->next = new_entry;
-                    current = new_entry;
+                    current_entry->next = new_entry;
+                    current_entry = new_entry;
+                }
+
+                printf("%d. %s\t", entry_index++, new_entry->name);
+                if (new_entry->attributes & 0x10)
+                {
+                    printf("(Directory)\n");
+                }
+                else
+                {
+                    printf("(File)\n");
                 }
             }
         }
     }
 
-    current = head;
-    while (current != NULL)
+    // Lựa chọn để mở thư mục hoặc hiển thị nội dung file
+    printf("\nPlease enter selection number or '..' to go back: ");
+    char choice[256];
+    fflush(stdin);
+    fgets(choice, sizeof(choice), stdin);
+
+    // Xóa ký tự newline từ input
+    choice[strcspn(choice, "\n")] = '\0';
+
+    if (strlen(choice) == 0)
     {
-        printf("%s\t", current->name);
-        if (current->attributes & 0x10)
+        fprintf(stderr, "Invalid selection\n");
+        return;
+    }
+
+    int selection = atoi(choice);
+    if (selection > 0 && selection < entry_index)
+    {
+        int idx = 0;
+        // Lấy entry thứ selection
+        fatfs_entry_t *selected_entry = head;
+        for (idx = 1; idx < selection; idx++)
         {
-            printf("(Directory)\n");
+            selected_entry = selected_entry->next;
+        }
+
+        if (selected_entry->attributes & 0x10)
+        {
+            // Nếu là thư mục, mở thư mục con
+            char new_path[MAX_PATH_LEN];
+            snprintf(new_path, MAX_PATH_LEN, "%s/%s", current_directory, selected_entry->name);
+            strncpy(current_directory, new_path, MAX_PATH_LEN);
+            fatfs_list_directory(new_path);
         }
         else
         {
-            printf("(File)\n");
+            // Nếu là file, hiển thị nội dung file
+            fatfs_display_file(selected_entry->name);
         }
-
-        current = current->next;
+    }
+    else if (strncmp(choice, "..", sizeof("..")) == 0)
+    {
+        // Điều hướng về thư mục cha
+        if (strcmp(current_directory, "/") == 0)
+        {
+            fatfs_list_directory("/");
+        }
+        else
+        {
+            char *last_slash = strrchr(current_directory, '/');
+            if (last_slash != NULL)
+            {
+                *last_slash = '\0'; // Xóa phần thư mục con cuối cùng
+                if (strcmp(current_directory, "") == 0)
+                {
+                    strcpy(current_directory, "/"); // Nếu bị xóa hết, trở lại root
+                }
+            }
+            fatfs_list_directory(current_directory);
+        }
+    }
+    else
+    {
+        fprintf(stderr, "Invalid selection\n");
     }
 
-    current = head;
-    while (current != NULL)
+    // Giải phóng bộ nhớ
+    current_entry = head;
+    while (current_entry != NULL)
     {
-        fatfs_entry_t *temp = current;
-        current = current->next;
+        fatfs_entry_t *temp = current_entry;
+        current_entry = current_entry->next;
         free(temp);
     }
 }
@@ -174,8 +252,9 @@ void fatfs_display_file(const char *filepath)
     uint32_t root_dir_start = s_FAT12Info.reserved_sectors + (s_FAT12Info.fat_count * s_FAT12Info.fat_size_16);
     uint32_t i = 0;
     uint32_t j = 0;
-    int k = 0;
     uint32_t l = 0;
+    int k = 0;
+    int file_found = 0;
 
     for (i = 0; i < root_dir_sectors; i++)
     {
@@ -209,6 +288,7 @@ void fatfs_display_file(const char *filepath)
 
             if (strcmp(name, filepath) == 0)
             {
+                file_found = 1;
                 uint32_t cluster = entry->first_cluster_low;
                 uint32_t size = entry->file_size;
                 uint8_t file_data[SECTOR_SIZE];
@@ -251,5 +331,8 @@ void fatfs_display_file(const char *filepath)
         }
     }
 
-    fprintf(stderr, "File not found\n");
+    if (!file_found)
+    {
+        fprintf(stderr, "File not found\n");
+    }
 }

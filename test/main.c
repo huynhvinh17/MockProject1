@@ -10,7 +10,6 @@ int main(void)
     if (fatfs_init(image_path) != 0)
     {
         fprintf(stderr, "Failed to initialize FAT filesystem\n");
-        hal_cleanup();
     }
     else
     {

@@ -43,6 +43,7 @@ int kmc_update_sector_size(uint16_t sectorSize)
 int32_t kmc_read_sector(uint32_t index, uint8_t *buff)
 {
     int status = 0;
+
     if (fseek(s_imageFile, index * s_sectorSize, SEEK_SET) != 0)
     {
         status = -1;
