@@ -5,7 +5,7 @@
 static FILE *s_imageFile = NULL;
 static uint16_t s_sectorSize = SECTOR_SIZE;
 
-int hal_init(const char *imagePath)
+int kmc_init(const char *imagePath)
 {
     int status = 0;
 
@@ -19,7 +19,7 @@ int hal_init(const char *imagePath)
     return status;
 }
 
-void hal_cleanup(void)
+void kmc_deinit(void)
 {
     if (s_imageFile != NULL)
     {
@@ -43,7 +43,6 @@ int kmc_update_sector_size(uint16_t sectorSize)
 int32_t kmc_read_sector(uint32_t index, uint8_t *buff)
 {
     int status = 0;
-
     if (fseek(s_imageFile, index * s_sectorSize, SEEK_SET) != 0)
     {
         status = -1;

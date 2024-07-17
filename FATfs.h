@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 
-#pragma pack(push, 1)
 typedef struct {
     uint8_t jump_code[3];            /** Jump code */
     char oem_name[8];                /** OEM Name */
@@ -26,7 +25,6 @@ typedef struct {
     char volume_label[11];           /** Volume label */
     char filesystem_type[8];         /** Filesystem type */
 } fatfs_bootsector_struct_t;
-#pragma pack(pop)
 
 typedef struct
 {
@@ -44,18 +42,20 @@ typedef struct
     uint32_t file_size;
 } fatfs_dir_entry_t;
 
-typedef struct fatfs_entry {
-    char name[12];
-    uint8_t attributes;
+typedef struct DirEntry {
+    char name[12];  // 11 characters for name + null terminator
+    uint32_t size;
+    int is_dir;
     uint32_t first_cluster;
-    struct fatfs_entry *next;
-} fatfs_entry_t;
+    struct DirEntry *next;
+} DirEntry;
 
-int fatfs_init(const char *image_path);
-void fatfs_deinit(void);
-int kmc_update_sector_size(uint16_t sectorSize);
-void fatfs_list_directory(const char *path);
-void fatfs_display_file(const char *filepath);
+void read_dir(uint32_t start_cluster, DirEntry **head, DirEntry **tail);
+void display_entries(DirEntry *head);
+int count_entries(DirEntry *head);
+DirEntry *get_entry_by_index(DirEntry *head, int index);
+void free_entries(DirEntry *head);
+void fatfs_read_file(const char *filepath, uint32_t start_cluster);
 
 #endif
 

@@ -11,13 +11,13 @@
  * @param imagePath The path to the image file to be opened.
  * @return int Returns 0 if the file is successfully opened, or -1 if there is an error.
  */
-int hal_init(const char *imagePath);
+int kmc_init(const char *imagePath);
 
 /**
  * @brief Cleans up resources used by the hardware layer.
  *
  */
-void hal_cleanup(void);
+void kmc_deinit(void);
 
 /**
  * @brief Updates the sector size used by the system.

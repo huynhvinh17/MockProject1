@@ -10,7 +10,6 @@
 static fatfs_bootsector_struct_t s_FAT12Info;
 static uint8_t *s_fat_table = NULL;
 
-
 int fatfs_init(const char *image_path)
 {
     int result = 0;
@@ -169,13 +168,11 @@ void fatfs_list_directory(const char *path)
         }
     }
 
-    // Lựa chọn để mở thư mục hoặc hiển thị nội dung file
     printf("\nPlease enter selection number or '..' to go back: ");
     char choice[256];
     fflush(stdin);
     fgets(choice, sizeof(choice), stdin);
 
-    // Xóa ký tự newline từ input
     choice[strcspn(choice, "\n")] = '\0';
 
     if (strlen(choice) == 0)
@@ -235,7 +232,6 @@ void fatfs_list_directory(const char *path)
         fprintf(stderr, "Invalid selection\n");
     }
 
-    // Giải phóng bộ nhớ
     current_entry = head;
     while (current_entry != NULL)
     {

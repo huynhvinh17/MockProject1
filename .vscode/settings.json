@@ -36,6 +36,7 @@
     "stdio.h": "c",
     "hal.h": "c",
     "stat.h": "c",
-    "fatfs.h": "c"
+    "fatfs.h": "c",
+    "stdlib.h": "c"
   }
 }
