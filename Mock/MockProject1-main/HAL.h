@@ -17,7 +17,7 @@ int hal_init(const char *imagePath);
  * @brief Cleans up resources used by the hardware layer.
  *
  */
-void hal_cleanup(void);
+void hal_cleanup();
 
 /**
  * @brief Updates the sector size used by the system.
@@ -47,3 +47,4 @@ int32_t kmc_read_sector(uint32_t index, uint8_t *buff);
 int32_t kmc_read_multi_sector(uint32_t index, uint32_t num, uint8_t *buff);
 
 #endif
+
