@@ -19,7 +19,7 @@ int hal_init(const char *imagePath)
     return status;
 }
 
-void hal_cleanup()
+void hal_cleanup(void)
 {
     if (s_imageFile != NULL)
     {

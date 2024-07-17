@@ -17,7 +17,7 @@ int hal_init(const char *imagePath);
  * @brief Cleans up resources used by the hardware layer.
  *
  */
-void hal_cleanup();
+void hal_cleanup(void);
 
 /**
  * @brief Updates the sector size used by the system.

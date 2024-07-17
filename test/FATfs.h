@@ -51,8 +51,9 @@ typedef struct fatfs_entry {
     struct fatfs_entry *next;
 } fatfs_entry_t;
 
-int fatfs_init();
-void fatfs_deinit();
+int fatfs_init(const char *image_path);
+void fatfs_deinit(void);
+int kmc_update_sector_size(uint16_t sectorSize);
 void fatfs_list_directory(const char *path);
 void fatfs_display_file(const char *filepath);
 
