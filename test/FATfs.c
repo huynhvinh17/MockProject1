@@ -88,7 +88,7 @@ void get_full_path(const char *base_path, const char *entry_name, char *full_pat
 
 char current_directory[MAX_PATH_LEN] = "/"; // Biến toàn cục lưu đường dẫn thư mục hiện tại
 
-void fatfs_list_directory(const char *path)
+/* void fatfs_list_directory(const char *path)
 {
     uint8_t sector[SECTOR_SIZE];
     uint32_t root_dir_sectors = ((s_FAT12Info.root_entry_count * 32) + (SECTOR_SIZE - 1)) / SECTOR_SIZE;
@@ -332,3 +332,4 @@ void fatfs_display_file(const char *filepath)
         fprintf(stderr, "File not found\n");
     }
 }
+ */

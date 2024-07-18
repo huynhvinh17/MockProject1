@@ -3,28 +3,31 @@
 
 #include <stdint.h>
 
-typedef struct {
-    uint8_t jump_code[3];            /** Jump code */
-    char oem_name[8];                /** OEM Name */
-    uint16_t bytes_per_sector;       /** Bytes per sector */
-    uint8_t sectors_per_cluster;     /** Sectors per cluster */
-    uint16_t reserved_sectors;       /** Number of reserved sectors */
-    uint8_t fat_count;               /** Number of FATs */
-    uint16_t root_entry_count;       /** Number of root directory entries */
-    uint16_t total_sectors_16;       /** Total number of sectors (if zero, use total_sectors_32) */
-    uint8_t media_descriptor;        /** Media descriptor */
-    uint16_t fat_size_16;            /** Sectors per FAT */
-    uint16_t sectors_per_track;      /** Sectors per track */
-    uint16_t number_of_heads;        /** Number of heads */
-    uint32_t hidden_sectors;         /** Number of hidden sectors */
-    uint32_t total_sectors_32;       /** Total number of sectors (if total_sectors_16 is zero) */
-    uint8_t drive_number;            /** Drive number */
-    uint8_t reserved1;               /** Reserved */
-    uint8_t boot_signature;          /** Boot signature */
-    uint32_t volume_id;              /** Volume ID */
-    char volume_label[11];           /** Volume label */
-    char filesystem_type[8];         /** Filesystem type */
+#pragma pack(push, 1)
+typedef struct
+{
+    uint8_t jump_code[3];        /** Jump code */
+    char oem_name[8];            /** OEM Name */
+    uint16_t bytes_per_sector;   /** Bytes per sector */
+    uint8_t sectors_per_cluster; /** Sectors per cluster */
+    uint16_t reserved_sectors;   /** Number of reserved sectors */
+    uint8_t fat_count;           /** Number of FATs */
+    uint16_t root_entry_count;   /** Number of root directory entries */
+    uint16_t total_sectors_16;   /** Total number of sectors (if zero, use total_sectors_32) */
+    uint8_t media_descriptor;    /** Media descriptor */
+    uint16_t fat_size_16;        /** Sectors per FAT */
+    uint16_t sectors_per_track;  /** Sectors per track */
+    uint16_t number_of_heads;    /** Number of heads */
+    uint32_t hidden_sectors;     /** Number of hidden sectors */
+    uint32_t total_sectors_32;   /** Total number of sectors (if total_sectors_16 is zero) */
+    uint8_t drive_number;        /** Drive number */
+    uint8_t reserved1;           /** Reserved */
+    uint8_t boot_signature;      /** Boot signature */
+    uint32_t volume_id;          /** Volume ID */
+    char volume_label[11];       /** Volume label */
+    char filesystem_type[8];     /** Filesystem type */
 } fatfs_bootsector_struct_t;
+#pragma pack(pop)
 
 typedef struct
 {
@@ -50,12 +53,21 @@ typedef struct DirEntry {
     struct DirEntry *next;
 } DirEntry;
 
-void read_dir(uint32_t start_cluster, DirEntry **head, DirEntry **tail);
+typedef struct DirectoryStack
+{
+    uint32_t cluster;
+    struct DirectoryStack *next;
+} DirectoryStack;
+
+
+int fatfs_init(const char *image_path);
+void fatfs_deinit(void);
+int kmc_update_sector_size(uint16_t sectorSize);
 void display_entries(DirEntry *head);
 int count_entries(DirEntry *head);
 DirEntry *get_entry_by_index(DirEntry *head, int index);
 void free_entries(DirEntry *head);
+void fatfs_read_dir(uint32_t start_cluster, DirEntry **head, DirEntry **tail);
 void fatfs_read_file(const char *filepath, uint32_t start_cluster);
 
 #endif
-

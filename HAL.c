@@ -69,4 +69,3 @@ int32_t kmc_read_multi_sector(uint32_t index, uint32_t num, uint8_t *buff)
 
     return status;
 }
-

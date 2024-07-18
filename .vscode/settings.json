@@ -37,6 +37,7 @@
     "hal.h": "c",
     "stat.h": "c",
     "fatfs.h": "c",
-    "stdlib.h": "c"
+    "stdlib.h": "c",
+    "string.h": "c"
   }
 }
