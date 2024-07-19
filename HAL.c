@@ -63,7 +63,7 @@ int32_t kmc_read_multi_sector(uint32_t index, uint32_t num, uint8_t *buff)
 
     if (fseek(s_imageFile, index * s_sectorSize, SEEK_SET) != 0)    /** Move file pointer to the desire sector */
     {
-        byteRead = -1;  /** Set byteRead to indicate failure */
+        byteRead = -1;
     }
     else
     {
