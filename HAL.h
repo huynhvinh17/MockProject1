@@ -1,12 +1,19 @@
-#ifndef HAL_H
-#define HAL_H
+#ifndef _HAL_H_
+#define _HAL_H_
 
 #include <stdint.h>
 
 #define SECTOR_SIZE 512
 
+/**  Define an enumeration to represent status codes */
+typedef enum
+{
+    KMC_OK = 0,     /**  Status code indicating success */
+    KMC_ERROR = -1  /**  Status code indicating an error */
+} kmc_status_t;     /**  Define the type name for the enumeration */
+
 /**
- * @brief Initializes hardware layer by opening the image file.
+ * @brief Function to initialize the image file for reading
  *
  * @param imagePath The path to the image file to be opened.
  * @return int Returns 0 if the file is successfully opened, or -1 if there is an error.
@@ -14,7 +21,7 @@
 int kmc_init(const char *imagePath);
 
 /**
- * @brief Cleans up resources used by the hardware layer.
+ * @brief Function to deinitialize the image file
  *
  */
 void kmc_deinit(void);
@@ -46,4 +53,4 @@ int32_t kmc_read_sector(uint32_t index, uint8_t *buff);
  */
 int32_t kmc_read_multi_sector(uint32_t index, uint32_t num, uint8_t *buff);
 
-#endif
+#endif  /** _HAL_H_ */

@@ -14,7 +14,6 @@ int main(void)
         fprintf(stderr, "Failed to initialize FAT filesystem\n");
         return 1;
     }
-
     DirEntry *head = NULL;
     DirEntry *tail = NULL;
     DirectoryStack *dirStack = NULL;
