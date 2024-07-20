@@ -38,6 +38,7 @@
     "stat.h": "c",
     "fatfs.h": "c",
     "stdlib.h": "c",
-    "string.h": "c"
+    "string.h": "c",
+    "stdbool.h": "c"
   }
 }

@@ -1,10 +1,21 @@
+/*******************************************************************************
+ * Definitions
+ ******************************************************************************/
+
 #ifndef _FATFS_H_
 #define _FATFS_H_
 
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+
+/*******************************************************************************
+ * Prototypes
+ ******************************************************************************/
 
 #pragma pack(push, 1)
-
 /**
  * @brief  Define the structure for the FAT filesystem boot sector
  */
@@ -132,9 +143,8 @@ void free_entries(DirEntry *head);
  *
  * @param start_cluster Cluster number where the directory starts
  * @param head Pointer to a pointer to the head of the linked list of directory entries (will be updated)
- * @param tail Pointer to a pointer to the tail of the linked list of directory entries (will be updated)
  */
-void fatfs_read_dir(uint32_t start_cluster, DirEntry **head, DirEntry **tail);
+void fatfs_read_dir(uint32_t start_cluster, DirEntry **head);
 
 /**
  * @brief Read a file from the filesystem
@@ -144,4 +154,4 @@ void fatfs_read_dir(uint32_t start_cluster, DirEntry **head, DirEntry **tail);
  */
 void fatfs_read_file(const char *filepath, uint32_t start_cluster);
 
-#endif
+#endif  /** _FATFS_H_ */
