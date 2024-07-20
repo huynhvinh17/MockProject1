@@ -6,6 +6,17 @@
 
 #define MAX_PATH_LENGTH 255 /** Define maximum length for path strings */
 
+void printOption(void)
+{
+    /** Display the entries in the current directory */
+    printf("\nOptions:\n");
+    printf("1. Open a file or directory\n");
+    printf("2. Go back to previous directory\n");
+    printf("3. Go back to root directory\n");
+    printf("4. Exit\n");
+    printf("Enter your choice: ");
+}
+
 int main(void)
 {
     const char *image_path = "floppy.img";      /** Path to the FAT filesystem image */
@@ -33,20 +44,15 @@ int main(void)
             printf("\nCurrent Directory: %s\n", currentPath);
             display_entries(head);  /** Display the entries in the current directory */
 
-            /** Display the entries in the current directory */
-            printf("\nOptions:\n");
-            printf("1. Open a file or directory\n");
-            printf("2. Go back to previous directory\n");
-            printf("3. Go back to root directory\n");
-            printf("4. Exit\n");
-            printf("Enter your choice: ");
+            printOption();
+
             scanf("%d", &choice);   /** Read user's choice */
 
             if (choice == 1)
             {
                 int index;
                 printf("Enter the index of the file or directory to open: ");
-                scanf("%d", &index);    /** Read the index of the entry to open */
+                scanf("%d", &index);        /**Read input until newline character */
 
                 DirEntry *entry = get_entry_by_index(head, index);  /** Get the directory entry by index */
                 if (entry)

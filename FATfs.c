@@ -66,6 +66,7 @@ int fatfs_init(const char *image_path)
     else
     {
         memcpy(&s_FAT12Info, bootSector, sizeof(s_FAT12Info));         /** Copy the boot sector data into the global FAT12 info structure */
+
         if (kmc_update_sector_size(s_FAT12Info.bytes_per_sector) != 0) /** Update the sector size */
         {
             fprintf(stderr, "Error: Failed to update sector size\n");
@@ -103,6 +104,7 @@ void fatfs_deinit(void)
         free(s_fat_table);  /** Free the allocated memory for the FAT table */
         s_fat_table = NULL; /** Set the pointer to NULL */
     }
+    kmc_deinit();
 }
 
 void display_entries(DirEntry *head)
@@ -122,11 +124,13 @@ int count_entries(DirEntry *head)
 {
     int count = 0;            /** Counter for the number of entries */
     DirEntry *current = head; /** Pointer to the list */
+
     while (current)
     {
         count++;                 /** Increment the count */
         current = current->next; /** Move to the next entry */
     }
+
     return count; /** Return the count of entries */
 }
 
@@ -194,7 +198,7 @@ void fatfs_read_dir(uint32_t start_cluster, DirEntry **head, DirEntry **tail)
                         varReturn = 0;
                     }
                     /** Check if the entry is deleted or a volume label */
-                    else if (dir[j].name[0] == 0xE5 || (dir[j].attr & 0x08))
+                    else if (dir[j].name[0] == 0xE5 || (dir[j].attr & 0x08)||(dir[j].attr & 0x20)||(dir[j].attr & 0x02))
                     {
                         /** do noting */
                     }
@@ -228,6 +232,7 @@ void fatfs_read_dir(uint32_t start_cluster, DirEntry **head, DirEntry **tail)
     else
     {
         uint32_t cluster = start_cluster;   /** Start reading from the given cluster */
+
         while (cluster < 0xFF8)
         {
             /** Calculate the starting sector of the current cluster */
@@ -286,6 +291,7 @@ void fatfs_read_dir(uint32_t start_cluster, DirEntry **head, DirEntry **tail)
 
             /** Calculate the next cluster using the FAT12 table */
             uint16_t fat_entry = (cluster * 3) / 2;
+
             if (cluster % 2 == 0)
             {
                 cluster = *(uint16_t *)&s_fat_table[fat_entry] & 0x0FFF;    /** Even cluster */
@@ -329,14 +335,25 @@ void fatfs_read_file(const char *filepath, uint32_t start_cluster)
         if(readSuccess)
         {
         /** Calculate the next cluster based on the FAT12 table. */
-        uint16_t fat_entry = (cluster * 3) / 2;
+        /* uint16_t fat_entry = (cluster * 3) / 2;
         if (cluster % 2 == 0)
         {
-            cluster = *(uint16_t *)&s_fat_table[fat_entry] & 0x0FFF; /** Even cluster */
+            cluster = *(uint16_t *)&s_fat_table[fat_entry] & 0x0FFF;
         }
         else
         {
-            cluster = (*(uint16_t *)&s_fat_table[fat_entry] >> 4) & 0x0FFF; /** Odd cluster */
+            cluster = (*(uint16_t *)&s_fat_table[fat_entry] >> 4) & 0x0FFF;
+        } */
+        uint16_t fat_entry = (cluster * 3) / 2;
+        uint8_t high_byte = s_fat_table[fat_entry];
+        uint8_t low_byte = s_fat_table[fat_entry + 1];
+        if (cluster % 2 == 0)
+        {
+            cluster = (high_byte & 0x0F) << 8 | low_byte; /** Even cluster */
+        }
+        else
+        {
+            cluster = (high_byte >> 4) | ((low_byte & 0xFF) << 4); /** Odd cluster */
         }
         }
     }

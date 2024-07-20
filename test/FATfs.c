@@ -31,6 +31,8 @@ int fatfs_init(const char *image_path)
         printf("Reserved sectors: %d\n", s_FAT12Info.reserved_sectors);
         printf("FAT count: %d\n", s_FAT12Info.fat_count);
         printf("FAT size: %d\n", s_FAT12Info.fat_size_16);
+        printf("FAT root_entry_count: %d\n", s_FAT12Info.root_entry_count);
+        printf("FAT size: %d\n", s_FAT12Info.sectors_per_cluster);
 
         if (kmc_update_sector_size(s_FAT12Info.bytes_per_sector) != 0) /** Update sector size */
         {
