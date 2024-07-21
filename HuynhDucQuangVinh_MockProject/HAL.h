@@ -1,3 +1,7 @@
+/*******************************************************************************
+ * Definitions
+ ******************************************************************************/
+
 #ifndef _HAL_H_
 #define _HAL_H_
 
@@ -5,22 +9,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/*******************************************************************************
- * Definitions
- ******************************************************************************/
-
 #define DEFAULT_SECTOR_SIZE 512
-
-/**  Define an enumeration to represent status codes */
-typedef enum
-{
-    KMC_ERROR = -1, /**  Status code indicating an error */
-    KMC_OK = 0      /**  Status code indicating success */
-} kmc_status_t;     /**  Define the type name for the enumeration */
 
 /*******************************************************************************
  * Prototypes
  ******************************************************************************/
+
+/**  Define an enumeration to represent status codes */
+typedef enum
+{
+    KMC_OK = 0,     /**  Status code indicating success */
+    KMC_ERROR = -1  /**  Status code indicating an error */
+} kmc_status_t;     /**  Define the type name for the enumeration */
 
 /**
  * @brief Function to initialize the image file for reading
@@ -63,4 +63,4 @@ int32_t kmc_read_sector(uint32_t index, uint8_t *buff);
  */
 int32_t kmc_read_multi_sector(uint32_t index, uint32_t num, uint8_t *buff);
 
-#endif /** _HAL_H_ */
+#endif  /** _HAL_H_ */

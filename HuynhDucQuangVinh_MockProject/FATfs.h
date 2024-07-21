@@ -1,3 +1,7 @@
+/*******************************************************************************
+ * Definitions
+ ******************************************************************************/
+
 #ifndef _FATFS_H_
 #define _FATFS_H_
 
@@ -7,20 +11,21 @@
 #include <string.h>
 #include <stdbool.h>
 
-/*******************************************************************************
- * Definitions
- ******************************************************************************/
-
 typedef enum
 {
     FAT_ERROR = -1,  /**  Status code indicating an error */
     FAT_OK = 0      /**  Status code indicating success */
 } FAT_status_t;     /**  Define the type name for the enumeration */
 
+
+/*******************************************************************************
+ * Prototypes
+ ******************************************************************************/
+
+#pragma pack(push, 1)
 /**
  * @brief  Define the structure for the FAT filesystem boot sector
  */
-#pragma pack(push,1)
 typedef struct
 {
     uint8_t jump_code[3];        /** Jump code */
@@ -43,9 +48,9 @@ typedef struct
     uint32_t volume_id;          /** Volume ID */
     char volume_label[11];       /** Volume label */
     char filesystem_type[8];     /** Filesystem type */
-    char ignor[450];
 } fatfs_bootsector_struct_t;
 #pragma pack(pop)
+
 /**
  * @brief Define the structure for a directory entry in the FAT filesystem
  */
@@ -73,8 +78,6 @@ typedef struct DirEntry
     char name[12];          /** 11 characters for name + null terminator */
     uint32_t size;          /** Size of the file */
     int is_dir;             /** Flag to indicate if entry is a directory */
-    uint16_t modified_time;
-    uint16_t modified_date;
     uint32_t first_cluster; /** First cluster number of the file/directory */
     struct DirEntry *next;  /** Pointer to the next directory entry in the lists */
 } DirEntry;
@@ -87,10 +90,6 @@ typedef struct DirectoryStack
     uint32_t cluster;            /** Cluster number */
     struct DirectoryStack *next; /** Pointer to the next item in the stack */
 } DirectoryStack;
-
-/*******************************************************************************
- * Prototypes
- ******************************************************************************/
 
 /**
  * @brief Initialize the filesystem and release resources
@@ -106,6 +105,21 @@ int fatfs_init(const char *image_path);
  * This function closes the image file and cleans up any allocated resources.
  */
 void fatfs_deinit(void);
+
+/**
+ * @brief Update the sector size for filesystem operations
+ *
+ * @param sectorSize New sector size to set
+ * @return int Status code indicating success (0) or failure (-1)
+ */
+int kmc_update_sector_size(uint16_t sectorSize);
+
+/**
+ * @brief Display the directory entries
+ *
+ * @param head Pointer to the head of the linked list of directory entries
+ */
+void display_entries(DirEntry *head);
 
 
 /**

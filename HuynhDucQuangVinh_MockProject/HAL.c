@@ -8,15 +8,11 @@
  * Variables
  ******************************************************************************/
 
-static FILE *s_imageFile = NULL;                    /** File pointer to the image file */
+static FILE *s_imageFile = NULL;            /** File pointer to the image file */
 static uint16_t s_sectorSize = DEFAULT_SECTOR_SIZE; /** Initializedto DEFAULT_SECTOR_SIZE */
 
 /*******************************************************************************
  * Prototypes
- ******************************************************************************/
-
-/*******************************************************************************
- * Code
  ******************************************************************************/
 
 int kmc_init(const char *imagePath)
@@ -31,6 +27,15 @@ int kmc_init(const char *imagePath)
     }
 
     return status; /** Return the status */
+}
+
+void kmc_deinit(void)
+{
+    if (s_imageFile != NULL) /** Check if the file is open */
+    {
+        fclose(s_imageFile); /** Close the file */
+        s_imageFile = NULL;  /** Set the file pointer to NULL */
+    }
 }
 
 int kmc_update_sector_size(uint16_t sectorSize)
@@ -58,6 +63,7 @@ int32_t kmc_read_sector(uint32_t index, uint8_t *buff)
     {
         byteRead = fread(buff, 1, s_sectorSize, s_imageFile); /** Read sector into the buffer */
     }
+
     return byteRead; /** Return the byteRead */
 }
 
@@ -75,13 +81,4 @@ int32_t kmc_read_multi_sector(uint32_t index, uint32_t num, uint8_t *buff)
     }
 
     return byteRead; /** Return the byteRead */
-}
-
-void kmc_deinit(void)
-{
-    if (s_imageFile != NULL) /** Check if the file is open */
-    {
-        fclose(s_imageFile); /** Close the file */
-        s_imageFile = NULL;  /** Set the file pointer to NULL */
-    }
 }

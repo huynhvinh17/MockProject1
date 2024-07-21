@@ -1,10 +1,9 @@
-
-#include "FATfs.h"
-#include "HAL.h"
-
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
+
+#include "FATfs.h"
+#include "HAL.h"
 
 #define DEFAULT_SECTOR_SIZE 512 /** Define size of sector by 512 byte */
 
@@ -17,10 +16,6 @@ static uint8_t *s_fat_table = NULL;           /** Pointer to the FAT table */
 
 /*******************************************************************************
  * Prototypes
- ******************************************************************************/
-
-/*******************************************************************************
- * Code
  ******************************************************************************/
 
 /**
@@ -61,7 +56,7 @@ uint32_t pop(DirectoryStack **stack)
 
 int fatfs_init(const char *image_path)
 {
-    FAT_status_t result = FAT_OK;            /** Variable to store the result of initialization */
+    int result = FAT_OK;                  /** Variable to store the result of initialization */
     uint8_t bootSector[DEFAULT_SECTOR_SIZE]; /** Buffer to hold the boot sector data */
 
     /** Initialize the layer with the image path */
@@ -100,14 +95,37 @@ int fatfs_init(const char *image_path)
                 if (kmc_read_multi_sector(s_FAT12Info.reserved_sectors, s_FAT12Info.fat_size_16, s_fat_table) != (s_FAT12Info.fat_size_16 * s_FAT12Info.bytes_per_sector))
                 {
                     fprintf(stderr, "Error: Failed to read FAT table\n");
-                    free(s_fat_table);  /** Free the allocated memory on failure */
-                    result = FAT_ERROR; /** Indicate failure to read the FAT table */
+                    free(s_fat_table); /** Free the allocated memory on failure */
+                    result = FAT_ERROR;       /** Indicate failure to read the FAT table */
                 }
             }
         }
     }
 
     return result; /** Return the result of initialization */
+}
+
+void fatfs_deinit(void)
+{
+    if (s_fat_table)
+    {
+        free(s_fat_table);  /** Free the allocated memory for the FAT table */
+        s_fat_table = NULL; /** Set the pointer to NULL */
+    }
+    kmc_deinit();
+}
+
+void display_entries(DirEntry *head)
+{
+    DirEntry *current = head; /** Pointer to the list */
+    int index = 0;            /** Index for displaying entries */
+
+    printf("Index   Name            Size    Type\n");
+    while (current)
+    {
+        printf("%-7d %-15s %-7u %s\n", index++, current->name, current->size, current->is_dir ? "DIR" : "FILE");
+        current = current->next; /** Move to the next entry */
+    }
 }
 
 DirEntry *get_entry_by_index(DirEntry *head, int index)
@@ -145,28 +163,21 @@ void free_entries(DirEntry *head)
 void fatfs_read_dir(uint32_t start_cluster, DirEntry **head)
 {
     uint8_t sector[DEFAULT_SECTOR_SIZE]; /** Buffer to hold sector data */
-    uint32_t cluster = start_cluster;    /** Start reading from the given cluster */
-
-    uint32_t first_sector_of_root_dir = s_FAT12Info.reserved_sectors + (s_FAT12Info.fat_count * s_FAT12Info.fat_size_16);
+    uint32_t root_dir_sector = s_FAT12Info.reserved_sectors + (s_FAT12Info.fat_count * s_FAT12Info.fat_size_16);
     uint32_t root_dir_size = (s_FAT12Info.root_entry_count * sizeof(fatfs_dir_entry_t)) / DEFAULT_SECTOR_SIZE;
-    uint32_t cluster_sector = first_sector_of_root_dir + root_dir_size + (cluster - 2) * s_FAT12Info.sectors_per_cluster;
-
-    uint16_t fat_entry = 0;
-    uint8_t high_byte = 0;
-    uint8_t low_byte = 0;
+    uint32_t i, j;
     bool varReturn = true;
-    uint32_t i = 0;
-    uint32_t j = 0;
 
     /** Read root directory if start cluster is 0 */
-    if (0 == start_cluster)
+    if (start_cluster == 0)
     {
-        for (i = 0; i < root_dir_size; i++)
+        for (i = 0; (i < root_dir_size) && (varReturn); i++)
         {
             /** Read each sector of the root directory */
-            if (kmc_read_multi_sector(first_sector_of_root_dir + i, s_FAT12Info.sectors_per_cluster, sector) != DEFAULT_SECTOR_SIZE)
+            if (kmc_read_sector(root_dir_sector + i, sector) != DEFAULT_SECTOR_SIZE)
             {
                 fprintf(stderr, "Error: Failed to read root directory sector %d\n", i);
+                varReturn = false;
             }
             else
             {
@@ -180,7 +191,7 @@ void fatfs_read_dir(uint32_t start_cluster, DirEntry **head)
                         varReturn = false;
                     }
                     /** Check if the entry is deleted or a long file name */
-                    else if ((dir[j].name[0] == 0xE5) || ((dir[j].attr & 0x0F) == 0x0F))
+                    else if (dir[j].name[0] == 0xE5 || ((dir[j].attr & 0x0F) == 0x0F))
                     {
                         /** do noting */
                     }
@@ -190,11 +201,9 @@ void fatfs_read_dir(uint32_t start_cluster, DirEntry **head)
                         memcpy(entry->name, dir[j].name, 11);                   /** Copy the name */
                         entry->name[11] = '\0';                                 /** Null-terminate the name */
                         entry->size = dir[j].file_size;                         /** File size */
-                        (entry->is_dir = (dir[j].attr & 0x10)) != 0;            /** Check if it's a directory */
+                        entry->is_dir = (dir[j].attr & 0x10) != 0;              /** Check if it's a directory */
                         entry->first_cluster = dir[j].first_cluster_low;        /** First cluster of the file or directory */
-                        entry->modified_time = dir[j].write_time;
-                        entry->modified_date = dir[j].write_date;
-                        entry->next = NULL; /** Initialize next pointer to NULL */
+                        entry->next = NULL;                                     /** Initialize next pointer to NULL */
 
                         /** Add the new entry to the linked list */
                         if (*head == NULL)
@@ -217,75 +226,72 @@ void fatfs_read_dir(uint32_t start_cluster, DirEntry **head)
     }
     else
     {
-        varReturn = true;
+        uint32_t cluster = start_cluster; /** Start reading from the given cluster */
+        uint16_t fat_entry = 0;
+        uint8_t high_byte = 0;
+        uint8_t low_byte = 0;
 
         while (cluster < 0xFF8)
         {
             /** Calculate the starting sector of the current cluster */
+            uint32_t cluster_sector = cluster + 31;
 
-            for (i = 0; i < s_FAT12Info.sectors_per_cluster; i++)
+            /** Read each sector of the current cluster */
+            if (kmc_read_sector(cluster_sector, sector) != DEFAULT_SECTOR_SIZE)
             {
-
-                /** Read each sector of the current cluster */
-                if (kmc_read_multi_sector(cluster_sector, s_FAT12Info.sectors_per_cluster, sector) != DEFAULT_SECTOR_SIZE)
+                fprintf(stderr, "Error: Failed to read sector %d of subdirectory\n", cluster_sector);
+            }
+            else
+            {
+                varReturn = true;
+                /** Pointer to directory entries in the sector */
+                fatfs_dir_entry_t *dir = (fatfs_dir_entry_t *)sector;
+                for (j = 0; j < (DEFAULT_SECTOR_SIZE / sizeof(fatfs_dir_entry_t)) && (varReturn); ++j)
                 {
-                    fprintf(stderr, "Error: Failed to read sector %d of subdirectory\n", cluster_sector);
-                }
-                else
-                {
-
-                    /** Pointer to directory entries in the sector */
-                    fatfs_dir_entry_t *dir = (fatfs_dir_entry_t *)sector;
-
-                    for (j = 0; j < (DEFAULT_SECTOR_SIZE / sizeof(fatfs_dir_entry_t)) && (varReturn); ++j)
+                    /** Check if the directory entry is empty */
+                    if (dir[j].name[0] == 0x00)
                     {
-                        /** Check if the directory entry is empty */
-                        if (dir[j].name[0] == 0x00)
+                        /**do nothing */
+                        varReturn = false;
+                    }
+                    else if (dir[j].name[0] == 0xE5 || ((dir[j].attr & 0x0F) == 0x0F))
+                    {
+                        /**do nothing */
+                    }
+                    else
+                    {
+                        DirEntry *entry = (DirEntry *)malloc(sizeof(DirEntry)); /** Allocate and initialize a new DirEntry */
+                        memcpy(entry->name, dir[j].name, 11);                   /** Copy the name */
+                        entry->name[11] = '\0';                                 /** Null-terminate the name */
+                        entry->size = dir[j].file_size;                         /** File size */
+                        entry->is_dir = (dir[j].attr & 0x10) != 0;              /** Check if it's a directory */
+                        entry->first_cluster = dir[j].first_cluster_low;        /** First cluster of the file or directory */
+                        entry->next = NULL;                                     /** Initialize next pointer to NULL */
+
+                        /** Add the new entry to the linked list */
+                        if (*head == NULL)
                         {
-                            /**do nothing */
-                            varReturn = false;
-                        }
-                        else if ((dir[j].name[0] == 0xE5) || ((dir[j].attr & 0x0F) == 0x0F))
-                        {
-                            /**do nothing */
+                            *head = entry; /** If the linked list is empty, assign the new entry to head*/
                         }
                         else
                         {
-                            DirEntry *entry = (DirEntry *)malloc(sizeof(DirEntry)); /** Allocate and initialize a new DirEntry */
-                            memcpy(entry->name, dir[j].name, 11);                   /** Copy the name */
-                            entry->name[11] = '\0';                                 /** Null-terminate the name */
-                            entry->size = dir[j].file_size;                         /** File size */
-                            entry->is_dir = (dir[j].attr & 0x10) != 0;              /** Check if it's a directory */
-                            entry->first_cluster = dir[j].first_cluster_low;        /** First cluster of the file or directory */
-                            entry->modified_time = dir[j].write_time;
-                            entry->modified_date = dir[j].write_date;
-                            entry->next = NULL; /** Initialize next pointer to NULL */
-
-                            /** Add the new entry to the linked list */
-                            if (*head == NULL)
+                            DirEntry *tail = *head; /** If the linked list is not empty, find the last element of the list */
+                            while (tail->next != NULL)
                             {
-                                *head = entry; /** If the linked list is empty, assign the new entry to head*/
+                                tail = tail->next; /** Move the tail pointer to the next element */
                             }
-                            else
-                            {
-                                DirEntry *tail = *head; /** If the linked list is not empty, find the last element of the list */
-                                while (tail->next != NULL)
-                                {
-                                    tail = tail->next; /** Move the tail pointer to the next element */
-                                }
-                                tail->next = entry; /** Assign the new entry to the next pointer of the last element */
-                            }
+                            tail->next = entry; /** Assign the new entry to the next pointer of the last element */
                         }
                     }
                 }
             }
 
-            fat_entry = (cluster * 3) / 2;         /** Find the byte offset */
+            fat_entry = (cluster * 3) / 2;        /** Find the byte offset */
             high_byte = s_fat_table[fat_entry];    /** Read the high byte from FAT */
             low_byte = s_fat_table[fat_entry + 1]; /** Read the low byte from FAT */
 
             /** Check if the cluster number is even or odd */
-            if (0 == (cluster % 2))
+            if (cluster % 2 == 0)
             { /** Taking the lower 4 bits of the hige byte and combining them with the low byte*/
                 cluster = (high_byte & 0x0F) << 8 | low_byte;
             }
@@ -299,14 +305,9 @@ void fatfs_read_dir(uint32_t start_cluster, DirEntry **head)
 
 void fatfs_read_file(const char *filepath, uint32_t start_cluster)
 {
-    uint32_t cluster = start_cluster;    /** Current cluster being read */
-    uint8_t sector[DEFAULT_SECTOR_SIZE]; /** Buffer to hold data read from a sector */
-
-    uint32_t first_sector_of_root_dir = s_FAT12Info.reserved_sectors + (s_FAT12Info.fat_count * s_FAT12Info.fat_size_16);
-    uint32_t root_dir_size = (s_FAT12Info.root_entry_count * sizeof(fatfs_dir_entry_t)) / DEFAULT_SECTOR_SIZE;
-    uint32_t cluster_sector = first_sector_of_root_dir + root_dir_size + (cluster - 2) * s_FAT12Info.sectors_per_cluster;
-
-    bool readSuccess = true; /** Flag to track read success */
+    uint32_t cluster = start_cluster; /** Current cluster being read */
+    uint8_t sector[DEFAULT_SECTOR_SIZE];      /** Buffer to hold data read from a sector */
+    bool readSuccess = true;          /** Flag to track read success */
     uint16_t fat_entry = 0;
     uint8_t high_byte = 0;
     uint8_t low_byte = 0;
@@ -314,8 +315,9 @@ void fatfs_read_file(const char *filepath, uint32_t start_cluster)
     while ((cluster < 0xFF8) && (readSuccess))
     {
         /** Calculate the sector number for the current cluster. */
+        uint32_t cluster_sector = cluster + 31;
 
-        if (kmc_read_multi_sector(cluster_sector, s_FAT12Info.sectors_per_cluster, sector) != DEFAULT_SECTOR_SIZE)
+        if (kmc_read_sector(cluster_sector, sector) != DEFAULT_SECTOR_SIZE)
         {
             fprintf(stderr, "Error: Failed to read sector %d of file\n", cluster_sector);
             readSuccess = false; /** Set flag to false if reading fails */
@@ -333,26 +335,14 @@ void fatfs_read_file(const char *filepath, uint32_t start_cluster)
             low_byte = s_fat_table[fat_entry + 1]; /** Read the low byte from FAT */
 
             /** Check if the cluster number is even or odd */
-            if (0 == (cluster % 2))
-            {
-                /** Taking the lower 4 bits of the hige byte and combining them with the low byte*/
+            if (cluster % 2 == 0)
+            { /** Taking the lower 4 bits of the hige byte and combining them with the low byte*/
                 cluster = (high_byte & 0x0F) << 8 | low_byte;
             }
             else
-            {
-                /** Taking the upper 4 bits of highbyte, and combining them with the low byte*/
+            { /** Taking the upper 4 bits of highbyte, and combining them with the low byte*/
                 cluster = (high_byte >> 4) | ((low_byte & 0xFF) << 8);
             }
         }
     }
-}
-
-void fatfs_deinit(void)
-{
-    if (s_fat_table)
-    {
-        free(s_fat_table);  /** Free the allocated memory for the FAT table */
-        s_fat_table = NULL; /** Set the pointer to NULL */
-    }
-    kmc_deinit();
 }
