@@ -23,13 +23,14 @@ void printOption(void)
     printf("Enter your choice: ");
 }
 
-int main(void)	
+int main(void)
 {
     const char *image_path = "floppy.img";      /** Path to the FAT filesystem image */
     DirEntry *head = NULL;                      /** Head of the linked list of directory entries */
     DirectoryStack *dirStack = NULL;            /** Stack for keeping of directory cluster */
     uint32_t currentCluster = 0;                /** Current cliuster for directory */
-    int choice;                                 /** Variable to store user's menu choice */
+    int choice;
+    int index = 0;                              /** Variable to store user's menu choice */
     bool checkChoice = true;                    /** Control variable for the main loop */
     char currentPath[MAX_PATH_LENGTH] = "/";    /** Curren path string */
     char rootPath[MAX_PATH_LENGTH] = "/";       /** Root path string for navigation */
@@ -55,11 +56,10 @@ int main(void)
 
             if (choice == 1)
             {
-                int index;
                 printf("Enter the index of the file or directory to open: ");
-                scanf("%d", &index);        /**Read input until newline character */
+                scanf("%d", &index);                                    /**Read input until newline character */
 
-                DirEntry *entry = get_entry_by_index(head, index);  /** Get the directory entry by index */
+                DirEntry *entry = get_entry_by_index(head, index);      /** Get the directory entry by index */
                 if (entry)
                 {
                 printf("Entry %d \n",entry->first_cluster);
@@ -71,7 +71,7 @@ int main(void)
                         strcat(currentPath, entry->name);               /** Update the current path */
                         free_entries(head);                             /** Free the old directory entries */
                         head = NULL;
-                        fatfs_read_dir(currentCluster, &head);   /** Read the new directory */
+                        fatfs_read_dir(currentCluster, &head);          /** Read the new directory */
                     }
                     else
                     {
@@ -99,7 +99,7 @@ int main(void)
                     free_entries(head);                             /** Free the old directory entries */
                     head = NULL;
                     strcpy(currentPath, rootPath);                  /** Reset the current path to root */
-                    fatfs_read_dir(currentCluster, &head);   /** Read the parent directory */
+                    fatfs_read_dir(currentCluster, &head);          /** Read the parent directory */
                 }
                 else
                 {
@@ -115,7 +115,7 @@ int main(void)
                 free_entries(head);                             /** Free the old directory entries */
                 head = NULL;
                 strcpy(currentPath, rootPath);                  /** Reset the current path to root */
-                fatfs_read_dir(currentCluster, &head);   /** Read the root directory */
+                fatfs_read_dir(currentCluster, &head);          /** Read the root directory */
             }
             else if (choice == 4)
             {

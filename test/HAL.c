@@ -35,7 +35,10 @@ int kmc_update_sector_size(uint16_t sectorSize)
     {
         status = -1;
     }
+    else
+    {
     s_sectorSize = sectorSize;
+    }
 
     return status;
 }

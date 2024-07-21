@@ -115,14 +115,6 @@ int kmc_update_sector_size(uint16_t sectorSize);
 void display_entries(DirEntry *head);
 
 /**
- * @brief Count the number of directory entries
- *
- * @param head Pointer to the head of the linked list of directory entries
- * @return int Number of entries in the directory
- */
-int count_entries(DirEntry *head);
-
-/**
  * @brief Get a directory entry by its index
  *
  * @param head Pointer to the head of the linked list of directory entries

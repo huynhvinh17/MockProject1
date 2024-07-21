@@ -149,7 +149,7 @@ DirEntry *get_entry_by_index(DirEntry *head, int index)
     DirEntry *result = NULL;  /** Pointer to store the result */
     int found = 0;            /** Flag to indicate if entry is found */
 
-    while (current && (!found))
+    while ((current) && (!found))
     {
         if (count == index)
         {
@@ -241,6 +241,9 @@ void fatfs_read_dir(uint32_t start_cluster, DirEntry **head)
     else
     {
         uint32_t cluster = start_cluster; /** Start reading from the given cluster */
+        uint16_t fat_entry = 0;
+        uint8_t high_byte = 0;
+        uint8_t low_byte = 0;
 
         while (cluster < 0xFF8)
         {
@@ -282,32 +285,32 @@ void fatfs_read_dir(uint32_t start_cluster, DirEntry **head)
                         /** Add the new entry to the linked list */
                         if (*head == NULL)
                         {
-                            *head = entry;
+                            *head = entry; /** If the linked list is empty, assign the new entry to head*/
                         }
                         else
                         {
-                            DirEntry *tail = *head;
+                            DirEntry *tail = *head; /** If the linked list is not empty, find the last element of the list */
                             while (tail->next != NULL)
                             {
-                                tail = tail->next;
+                                tail = tail->next; /** Move the tail pointer to the next element */
                             }
-                            tail->next = entry;
+                            tail->next = entry; /** Assign the new entry to the next pointer of the last element */
                         }
                     }
                 }
             }
 
-            /** Calculate the next cluster using the FAT12 table */
-            uint16_t fat_entry = (cluster * 3) / 2;
-            uint8_t high_byte = s_fat_table[fat_entry];
-            uint8_t low_byte = s_fat_table[fat_entry + 1];
+            fat_entry = (cluster * 3) / 2;        /** Find the byte offset */
+            high_byte = s_fat_table[fat_entry];    /** Read the high byte from FAT */
+            low_byte = s_fat_table[fat_entry + 1]; /** Read the low byte from FAT */
 
+            /** Check if the cluster number is even or odd */
             if (cluster % 2 == 0)
-            {
+            { /** Taking the lower 4 bits of the hige byte and combining them with the low byte*/
                 cluster = (high_byte & 0x0F) << 8 | low_byte;
             }
             else
-            {
+            { /** Taking the upper 4 bits of highbyte, and combining them with the low byte*/
                 cluster = (high_byte >> 4) | ((low_byte & 0xFF) << 8);
             }
         }
@@ -319,6 +322,9 @@ void fatfs_read_file(const char *filepath, uint32_t start_cluster)
     uint32_t cluster = start_cluster; /** Current cluster being read */
     uint8_t sector[SECTOR_SIZE];      /** Buffer to hold data read from a sector */
     bool readSuccess = true;          /** Flag to track read success */
+    uint16_t fat_entry = 0;
+    uint8_t high_byte = 0;
+    uint8_t low_byte = 0;
 
     while ((cluster < 0xFF8) && (readSuccess))
     {
@@ -335,18 +341,20 @@ void fatfs_read_file(const char *filepath, uint32_t start_cluster)
             fwrite(sector, 1, SECTOR_SIZE, stdout); /** Output the sector data to stdout. */
         }
 
+        /** Caculate the position in the FAT table */
         if (readSuccess)
         {
-            uint16_t fat_entry = (cluster * 3) / 2;
-            uint8_t high_byte = s_fat_table[fat_entry];
-            uint8_t low_byte = s_fat_table[fat_entry + 1];
+            fat_entry = (cluster * 3) / 2;         /** Find the byte offset */
+            high_byte = s_fat_table[fat_entry];    /** Read the high byte from FAT */
+            low_byte = s_fat_table[fat_entry + 1]; /** Read the low byte from FAT */
 
+            /** Check if the cluster number is even or odd */
             if (cluster % 2 == 0)
-            {
+            { /** Taking the lower 4 bits of the hige byte and combining them with the low byte*/
                 cluster = (high_byte & 0x0F) << 8 | low_byte;
             }
             else
-            {
+            { /** Taking the upper 4 bits of highbyte, and combining them with the low byte*/
                 cluster = (high_byte >> 4) | ((low_byte & 0xFF) << 8);
             }
         }
