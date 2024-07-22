@@ -11,16 +11,18 @@
  * Definitions
  ******************************************************************************/
 
+/** Define enumeration to represent status code */
 typedef enum
 {
-    FAT_ERROR = -1,  /**  Status code indicating an error */
-    FAT_OK = 0      /**  Status code indicating success */
+    FAT_ERROR = -1, /**  Status code indicating an error */
+    FAT_OK = 0,     /**  Status code indicating success */
+    FAT_INDEX = 1   /**  Status code indicating find index*/
 } FAT_status_t;     /**  Define the type name for the enumeration */
 
 /**
  * @brief  Define the structure for the FAT filesystem boot sector
  */
-#pragma pack(push,1)
+#pragma pack(push, 1)
 typedef struct
 {
     uint8_t jump_code[3];        /** Jump code */
@@ -46,6 +48,7 @@ typedef struct
     char ignor[450];
 } fatfs_bootsector_struct_t;
 #pragma pack(pop)
+
 /**
  * @brief Define the structure for a directory entry in the FAT filesystem
  */
@@ -70,23 +73,14 @@ typedef struct
  */
 typedef struct DirEntry
 {
-    char name[12];          /** 11 characters for name + null terminator */
-    uint32_t size;          /** Size of the file */
-    int is_dir;             /** Flag to indicate if entry is a directory */
+    char name[12]; /** 11 characters for name + null terminator */
+    uint32_t size; /** Size of the file */
+    int is_dir;    /** Flag to indicate if entry is a directory */
     uint16_t modified_time;
     uint16_t modified_date;
     uint32_t first_cluster; /** First cluster number of the file/directory */
     struct DirEntry *next;  /** Pointer to the next directory entry in the lists */
 } DirEntry;
-
-/**
- * @brief  Define the structure for a stack of directories (for navigation)
- */
-typedef struct DirectoryStack
-{
-    uint32_t cluster;            /** Cluster number */
-    struct DirectoryStack *next; /** Pointer to the next item in the stack */
-} DirectoryStack;
 
 /*******************************************************************************
  * Prototypes
@@ -101,14 +95,6 @@ typedef struct DirectoryStack
 int fatfs_init(const char *image_path);
 
 /**
- * @brief Deinitialize the filesystem and release resources
- *
- * This function closes the image file and cleans up any allocated resources.
- */
-void fatfs_deinit(void);
-
-
-/**
  * @brief Get a directory entry by its index
  *
  * @param head Pointer to the head of the linked list of directory entries
@@ -116,13 +102,6 @@ void fatfs_deinit(void);
  * @return DirEntry* Pointer to the directory entry at the specified index
  */
 DirEntry *get_entry_by_index(DirEntry *head, int index);
-
-/**
- * @brief Free the memory allocated for directory entries
- *
- * @param head Pointer to the head of the linked list of directory entries
- */
-void free_entries(DirEntry *head);
 
 /**
  * @brief Read the contents of a directory starting from a specific cluster
@@ -140,4 +119,18 @@ void fatfs_read_dir(uint32_t start_cluster, DirEntry **head);
  */
 void fatfs_read_file(const char *filepath, uint32_t start_cluster);
 
-#endif  /** _FATFS_H_ */
+/**
+ * @brief Free the memory allocated for directory entries
+ *
+ * @param head Pointer to the head of the linked list of directory entries
+ */
+void free_entries(DirEntry *head);
+
+/**
+ * @brief Deinitialize the filesystem and release resources
+ *
+ * This function closes the image file and cleans up any allocated resources.
+ */
+void fatfs_deinit(void);
+
+#endif /** _FATFS_H_ */

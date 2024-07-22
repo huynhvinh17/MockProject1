@@ -31,12 +31,6 @@ typedef enum
 int kmc_init(const char *imagePath);
 
 /**
- * @brief Function to deinitialize the image file
- *
- */
-void kmc_deinit(void);
-
-/**
  * @brief Updates the sector size used by the system.
  *
  * @param sectorSize The new sector size to be set. Must be a non-zero value.
@@ -62,5 +56,10 @@ int32_t kmc_read_sector(uint32_t index, uint8_t *buff);
  * @return int32_t return the number of bytes read on success, or a negative value to indicate an error:
  */
 int32_t kmc_read_multi_sector(uint32_t index, uint32_t num, uint8_t *buff);
+
+/**
+ * @brief Function to deinitialize the image file
+ */
+void kmc_deinit(void);
 
 #endif /** _HAL_H_ */
