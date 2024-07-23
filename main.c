@@ -51,25 +51,24 @@ void format_time(uint16_t time, char *buffer)
  *
  * @param head A pointer to the first 'DirEntry' in the linked list
  */
-void display_entries(DirEntry *head)
+void display_entries(DirEntry *DirEntryList)
 {
-    DirEntry *current = head; /** Pointer to the list */
-    int index = 1;            /** Index for displaying entries */
-    char modified_time[7];    /** Buffer to store formatted time */
-    char modified_date[11];   /** Buffer to store formatted date */
+    int index = 1;          /** Index for displaying entries */
+    char modified_time[7];  /** Buffer to store formatted time */
+    char modified_date[11]; /** Buffer to store formatted date */
 
     printf("Index   Name            Size    Type    Modified\n");
 
-    while (current)
+    while (DirEntryList)
     {
         /** Format the date and time of the entry */
-        format_date(current->modified_date, modified_date);
-        format_time(current->modified_time, modified_time);
+        format_date(DirEntryList->modified_date, modified_date);
+        format_time(DirEntryList->modified_time, modified_time);
 
         /** Print the entry details */
-        printf("%-7d %-15s %-7u %-7s %-12s\n", index++, current->name, current->size, current->is_dir ? "DIR" : "FILE", strcat(modified_time, modified_date));
+        printf("%-7d %-15s %-7u %-7s %-12s\n", index++, DirEntryList->name, DirEntryList->size, DirEntryList->is_dir ? "DIR" : "FILE", strcat(modified_time, modified_date));
 
-        current = current->next; /** Move to the next entry */
+        DirEntryList = DirEntryList->next; /** Move to the next entry */
     }
 }
 
@@ -88,15 +87,15 @@ void printOption(void)
 int main(void)
 {
     const char *image_path = "floppy.img"; /** Path to the FAT filesystem image */
-    DirEntry *head = NULL;                 /** Head of the linked list of directory entries */
+    DirEntry *DirEntryList = NULL;         /** Head of the linked list of directory entries */
     uint32_t currentCluster = 0;           /** Current cliuster for directory */
 
     int choice = 0;
-    int index = 0;                              /** Variable to store user's menu choice */
-    bool checkChoice = true;                    /** Control variable for the main loop */
+    int index = 0;           /** Variable to store user's menu choice */
+    bool checkChoice = true; /** Control variable for the main loop */
 
-    char currentPath[MAX_PATH_LENGTH] = "/";    /** Curren path string */
-    char rootPath[MAX_PATH_LENGTH] = "/";       /** Root path string for navigation */
+    char currentPath[MAX_PATH_LENGTH] = "/"; /** Curren path string */
+    char rootPath[MAX_PATH_LENGTH] = "/";    /** Root path string for navigation */
 
     /** Initialize the FAT filesystem with the provided image path */
     if (fatfs_init(image_path) != 0)
@@ -105,15 +104,15 @@ int main(void)
     }
     else
     {
-        fatfs_read_dir(currentCluster, &head); /** Reads thte contents of a directory from the FAT filesystem */
+        fatfs_read_dir(currentCluster, &DirEntryList); /** Reads the contents of a directory from the FAT filesystem */
 
         while (checkChoice)
         {
             system("cls"); /** clear the screen on windows */
             printf("\nCurrent Directory: %s\n", currentPath);
-            display_entries(head); /** Display the entries in the current directory */
+            display_entries(DirEntryList); /** Display the entries in the current directory */
 
-            printOption();  /** Display the option for user's choice */
+            printOption(); /** Display the option for user's choice */
 
             scanf("%d", &choice); /** Read user's choice */
 
@@ -122,27 +121,25 @@ int main(void)
                 printf("Enter the index of the file or directory to open: ");
                 scanf("%d", &index); /**Read input until newline character */
 
-                DirEntry *entry = get_entry_by_index(head, index); /** Get the directory entry by index */
+                DirEntry *entry = get_index(DirEntryList, index); /** Get the directory entry by index */
 
                 if (entry)
                 {
-                    printf("Entry %d \n", entry->first_cluster);
-
                     if (entry->is_dir)
                     {
-                        currentCluster = entry->first_cluster; /** Update the current cluster to the new directory */
-                        strcat(currentPath, "/");              /** Update the current path with / */
-                        strcat(currentPath, entry->name);      /** Update the current path */
-                        free_entries(head);                    /** Free the old directory entries */
-                        head = NULL;                           /** Reset */
-                        fatfs_read_dir(currentCluster, &head); /** Read the new directory */
+                        currentCluster = entry->first_cluster;         /** Update the current cluster to the new directory */
+                        strcat(currentPath, "/");                      /** Update the current path with / */
+                        strcat(currentPath, entry->name);              /** Update the current path */
+                        free_entries(DirEntryList);                    /** Free the old directory entries */
+                        DirEntryList = NULL;                           /** Reset */
+                        fatfs_read_dir(currentCluster, &DirEntryList); /** Read the new directory */
                     }
                     else
                     {
-                        printf("Reading file %s:\n", entry->name);          /** If the entry is a file, read and display its contents */
+                        printf("\nReading file %s:\n", entry->name);          /** If the entry is a file, read and display its contents */
                         fatfs_read_file(entry->name, entry->first_cluster); /** Reads the content of a file from the FAT filesystem. */
 
-                        printf("\nPress Enter to continue...");
+                        printf("\n\nPress Enter to continue...");
                         getchar(); /** Read a character from the input buffer */
                         getchar(); /** waits for the user to press Enter */
                     }
@@ -158,11 +155,11 @@ int main(void)
             }
             else if (2 == choice)
             {
-                currentCluster = 0;                    /** Set the current cluster to root */
-                free_entries(head);                    /** Free the old directory entries */
-                head = NULL;                           /** Reset */
-                strcpy(currentPath, rootPath);         /** Reset the current path to root */
-                fatfs_read_dir(currentCluster, &head); /** Read the root directory */
+                currentCluster = 0;                            /** Set the current cluster to root */
+                free_entries(DirEntryList);                    /** Free the old directory entries */
+                DirEntryList = NULL;                           /** Reset */
+                strcpy(currentPath, rootPath);                 /** Reset the current path to root */
+                fatfs_read_dir(currentCluster, &DirEntryList); /** Read the root directory */
             }
             else if (3 == choice)
             {
@@ -178,7 +175,7 @@ int main(void)
         }
 
         /** Free allocated resources and deinitialize the FAT filesystem */
-        free_entries(head);
+        free_entries(DirEntryList);
         fatfs_deinit();
     }
 

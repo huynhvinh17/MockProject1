@@ -101,7 +101,7 @@ int fatfs_init(const char *image_path);
  * @param index Index of the entry to retrieve
  * @return DirEntry* Pointer to the directory entry at the specified index
  */
-DirEntry *get_entry_by_index(DirEntry *head, int index);
+DirEntry *get_index(DirEntry *head, int index);
 
 /**
  * @brief Read the contents of a directory starting from a specific cluster
